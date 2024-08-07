@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./build/install/comp2022-7b/bin/comp2022-7b "$@"

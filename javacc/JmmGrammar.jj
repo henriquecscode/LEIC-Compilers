@@ -1,0 +1,266 @@
+PARSER_PACKAGE=pt.up.fe.comp;
+PARSER_CLASS=JmmGrammarParser;
+SMART_NODE_CREATION=false;
+TOKENS_ARE_NODES=false;
+
+
+SKIP:
+{
+< "//" (~["\r", "\n"])* > |
+// < "/*" (~[])* "*/">  | Multiline
+< " " > |
+< "\t" > |
+< "\r" > |
+< "\n" >
+}
+
+TOKEN :
+	< PLUS : "+" > |
+	< MINUS : "-" > |
+	< TIMES : "*" > |
+	< EQUAL : "=" > |
+	< DIVIDE : "/" > |
+	< OPEN_PAREN : "(" > |
+	< CLOSE_PAREN : ")" > |
+	< INTEGER : (["0" - "9"])+ > |
+	< IMPORT : "import" > |
+    < PERIOD : "." > |
+    < COMMA : "," > |
+    < SEMICOLON : ";" > |
+    < AND : "&&" > |
+    < CLASS : "class" > |
+    < EXTENDS : "extends" > |
+    < OPEN_CURLY : "{" > |
+    < CLOSE_CURLY : "}" > |
+    < PUBLIC : "public" > |
+    < STATIC : "static" > |
+    < VOID : "void" > |
+    < MAIN : "main" > |
+    < STRING: "String" > |
+    < OPEN_SQUARE : "[" > |
+    < CLOSE_SQUARE : "]" > |
+    < INT : "int" > |
+    < BOOL : "boolean" > |
+    < IF : "if" > |
+    < ELSE: "else" > |
+    < WHILE : "while" > |
+    < LENGTH : "length" > |
+    < TRUE : "true" > |
+    < FALSE : "false" > |
+    < THIS : "this" > |
+    < NEW : "new" > |
+    < EXCLAMATION : "!" > |
+    < RETURN : "return" > |
+    < LESS : "<" > |
+    < ID : (["a"-"z"] | ["A"-"Z"] | "_" | "$") (["a"-"z"] | ["A"-"Z"] | ["0"-"9"] | "_" | "$")* >
+    /*|
+    < INT_LIT : (["0"-"9"])>*/
+;
+
+Start:
+    Program
+;
+
+// Programa
+Program #void:
+    (ImportDeclaration)* ClassDeclaration <EOF>
+;
+
+ ImportDeclaration:
+     <IMPORT> ImportDeclarationPrime (<PERIOD> ImportDeclarationPrime)* <SEMICOLON>
+ ;
+
+ ImportDeclarationPrime #void:
+     <ID> ({jjtThis.put("value",  lastConsumedToken.getImage()); }) #Imp
+;
+
+ClassDeclaration:
+    <CLASS> <ID>  { jjtThis.put("value", lastConsumedToken.getImage()); } (<EXTENDS> <ID> ({jjtThis.put("value",  lastConsumedToken.getImage()); }) #Ext)? <OPEN_CURLY>
+        // Order is not deterministic
+        (VariableDeclaration)* // Zero or more
+        (MethodDeclaration)* // Zero or more
+    <CLOSE_CURLY>
+;
+
+Type :
+    <INT> {jjtThis.put("op", "int");} (<OPEN_SQUARE> <CLOSE_SQUARE> {jjtThis.put("op", "int array");})? |
+    /*<STRING> {jjtThis.put("op", "str");} |*/
+    <BOOL> {jjtThis.put("op", "boolean");} |
+    <ID> {jjtThis.put("op", lastConsumedToken.getImage());}
+;
+
+VariableDeclaration  :
+     Type <ID> ({jjtThis.put("value",  lastConsumedToken.getImage()); }) #Idntf <SEMICOLON>
+;
+
+VariableDeclarationQueue #void:
+    SCAN 2 (VariableDeclaration)
+;
+
+MethodDeclaration #void:
+    <PUBLIC> MethodDeclarationPublic
+;
+
+MethodDeclarationPublic :
+    (
+    Type <ID> ({jjtThis.put("value", lastConsumedToken.getImage()); }) #Idntf <OPEN_PAREN> (MethodArguments)?
+    |
+    <STATIC> <VOID> <MAIN> <OPEN_PAREN> <STRING> <OPEN_SQUARE> <CLOSE_SQUARE> <ID> ({jjtThis.put("static void main String []",  lastConsumedToken.getImage()); }) #MainMethod
+    )
+    MethodBody
+;
+
+MethodArguments:
+    MethodArgumentsPrime (<COMMA> MethodArgumentsPrime)*
+;
+
+MethodArgumentsPrime #void:
+    (Type <ID> ({jjtThis.put("value",  lastConsumedToken.getImage()); }) #Idntf) #MethodArgument(2)
+;
+
+MethodBody :
+    <CLOSE_PAREN> <OPEN_CURLY>
+        (VariableDeclarationQueue)*
+        (Statement)*
+        (<RETURN> Expression #ReturnStatement(1)<SEMICOLON>)?
+    <CLOSE_CURLY>
+;
+
+Statement:
+    <OPEN_CURLY> (Statement)* <CLOSE_CURLY> |
+     (<IF> <OPEN_PAREN> Expression #IfCondition(1) <CLOSE_PAREN> Statement #IfBody(1) <ELSE> Statement #ElseBody(1)) ({jjtThis.put("op", "if"); }) #IfStatement(3) |
+    (<WHILE> <OPEN_PAREN> Expression #WhileCondition(1) <CLOSE_PAREN> Statement #WhileBody(1)) ({jjtThis.put("op", "while"); }) #WhileStatement(2) |
+    <ID> ExpressionIndependent2 (ExpressionPriorityInverted)? <SEMICOLON>|
+     (<NEW> ExpressionBeginningNew { jjtThis.put("op", "new"); }) #UnaryOp <SEMICOLON> |
+    Expression <SEMICOLON>
+;
+
+ExpressionIndependent2 :
+    (
+        (({jjtThis.put("name", lastConsumedToken.getImage()); }) #Idntf) #Variable(1)
+        (<EQUAL> StatementAssignment {jjtThis.put("op", "assign");}) #BinOp(2)
+    |
+        (
+            ExpressionOrAssignment
+            (
+            (<EQUAL> #Variable(2) StatementAssignment {jjtThis.put("op", "assign");}) #BinOp(2)
+            |
+            StatementExpression
+            )
+        )
+    )
+;
+
+ExpressionOrAssignment #void:
+    (({jjtThis.put("name", lastConsumedToken.getImage()); }) #Idntf)
+    ((<OPEN_SQUARE> Expression {jjtThis.put("op","array");}) #UnaryOp(1) <CLOSE_SQUARE>)?
+;
+
+StatementExpression #void:
+    (ExpressionEnd)*
+;
+StatementAssignment #void:
+    Expression
+;
+
+ExpressionPriorityInverted #void:
+(
+    (<TIMES> RExclamation) ({jjtThis.put("op","mult");}) #BinOp(2) |
+    (<DIVIDE> RExclamation) ({jjtThis.put("op","div");}) #BinOp(2) |
+    (<PLUS> RExpressionSemiComment) ({jjtThis.put("op","add");}) #BinOp(2) |
+    (<MINUS> RExpressionSemiComment) ({jjtThis.put("op","sub");}) #BinOp(2) |
+    (<LESS> RExpressionPlusMinus) ({jjtThis.put("op","Lessthan");}) #BinOp(2) |
+    (<AND> RExpressionLess) ({jjtThis.put("op","and");}) #BinOp(2)
+)
+((<TIMES> | <DIVIDE>) RExclamation)* ((<PLUS> | <MINUS>) RExpressionSemiComment)* (<LESS> RExpressionPlusMinus)* (<AND> RExpressionLess)*
+;
+
+RExpressionAnd #void: // R for rework
+    RExpressionLess ((<AND> RExpressionLess) ({jjtThis.put("op","and");}) #BinOp(2))*
+;
+
+RExpressionLess #void:
+    RExpressionPlusMinus ((<LESS> RExpressionPlusMinus) ({jjtThis.put("op","Lessthan");}) #BinOp(2))*
+;
+
+RExpressionPlusMinus #void:
+    RExpressionSemiComment ((<PLUS> RExpressionSemiComment) ({jjtThis.put("op","add");}) #BinOp(2) |(<MINUS> RExpressionSemiComment) ({jjtThis.put("op","sub");}) #BinOp(2))*
+;
+
+RExpressionSemiComment #void:
+    RExclamation ((<TIMES> RExclamation) ({jjtThis.put("op","mult");}) #BinOp(2) | (<DIVIDE> RExclamation) ({jjtThis.put("op","div");}) #BinOp(2))*
+;
+
+RExclamation #void:
+    ExpressionIndependent |
+    ExpressionIndependent3 |
+    ((<EXCLAMATION>  (RExclamation |   <OPEN_PAREN> Expression <CLOSE_PAREN> (ExpressionEnd)*  ) {jjtThis.put("op","!");}) #UnaryOp(1)) #ExpressionIndependent(1)
+;
+
+ExpressionIndependent: // No operators nor wrapping parenthesis ()
+    ExpressionBeginning (ExpressionEnd)*
+;
+
+ExpressionIndependent3 #ExpressionIndependent3:
+    <OPEN_PAREN> Expression <CLOSE_PAREN>  (ExpressionEnd)*
+;
+
+ExpressionEnd #void:
+    (<OPEN_SQUARE> Expression {jjtThis.put("op","array");}) #UnaryOp(1) <CLOSE_SQUARE> |
+    (<PERIOD> Suffix {jjtThis.put("op","point");}) #UnaryOp(1)
+;
+
+Expression #void:
+    RExpressionAnd
+;
+
+ExpressionBeginning #void:
+        <INTEGER> ({jjtThis.put("value",  lastConsumedToken.getImage()); }) #IntegerLiteral | // Valores inteiros
+        <TRUE> ({jjtThis.put("name",  lastConsumedToken.getImage()); }) #Idntf |
+        <FALSE> ({jjtThis.put("name",  lastConsumedToken.getImage()); }) #Idntf | // Booleanos
+        <ID> ({jjtThis.put("name",  lastConsumedToken.getImage()); }) #Idntf | // Identificadores de variáveis
+        <THIS> ({jjtThis.put("name",  lastConsumedToken.getImage()); }) #Idntf |
+        (<NEW> ExpressionBeginningNew { jjtThis.put("op", "new"); }) #UnaryOp
+;
+
+ExpressionBeginningNew #void:
+    <ID> ({jjtThis.put("name",  lastConsumedToken.getImage()); }) #Idntf <OPEN_PAREN> <CLOSE_PAREN> |
+    <INT> <OPEN_SQUARE> ({jjtThis.put("name", "int array");}) #Idntf Expression  <CLOSE_SQUARE>
+;
+
+Suffix :
+    <LENGTH> {jjtThis.put("op", "length"); }|
+    <ID> {jjtThis.put("op",  lastConsumedToken.getImage()); } <OPEN_PAREN> (SuffixArguments)?  <CLOSE_PAREN>
+;
+
+SuffixArguments :
+    Expression (<COMMA> Expression)*
+;
+
+ // Injections for the implementation of JmmNode
+ // Since this is injected into BaseNode, it affects only non-terminals
+INJECT BaseNode :
+         import pt.up.fe.comp.jmm.ast.JmmNode;
+         import pt.up.fe.comp.jmm.ast.AJmmNode;
+         import pt.up.fe.specs.util.SpecsCollections;
+         extends AJmmNode
+ {
+     @Override
+     public List<JmmNode> getChildren() {
+
+         return SpecsCollections.cast(children(), JmmNode.class);
+     }
+
+     @Override
+     public void add(JmmNode child, int index) {
+
+         if (child instanceof Node) {
+
+             addChild(index, (Node) child);
+         } else {
+
+             throw new RuntimeException("Node " + child + " is not a Node.");
+         }
+
+     }
+ }

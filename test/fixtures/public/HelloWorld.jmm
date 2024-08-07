@@ -1,0 +1,8 @@
+import ioPlus;
+import BoardBase;
+
+class HelloWorld extends BoardBase{
+	public static void main(String[] args) {
+		ioPlus.printHelloWorld();
+	}
+}

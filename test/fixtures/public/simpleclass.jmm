@@ -1,0 +1,6 @@
+class A extends B {
+ public static void main(String[] args){
+        int c;
+        c = 20+ 20 + 20 + 20 + 20;
+    }
+}

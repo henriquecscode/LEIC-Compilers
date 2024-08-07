@@ -1,0 +1,13 @@
+import io;
+class SymbolTest{
+  public void func(int c, int d){
+    int a=c+d;
+  }
+
+  public static void main(String[] args){
+        int a;
+        int b;
+        bool c;
+        func(b,c);
+    }
+}

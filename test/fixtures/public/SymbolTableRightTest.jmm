@@ -1,0 +1,14 @@
+import io;
+class SymbolTest{
+  public int func(int c, int d){
+    int a;
+    a = c+d;
+  }
+
+  public int hello(){
+        int a;
+        int b;
+        int c;
+        this.func(b,c);
+    }
+}

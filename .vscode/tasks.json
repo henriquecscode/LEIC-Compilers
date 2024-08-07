@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "gradle",
+			"id": "d:\\COLLEGE\\PROJETOS\\comp2022-7bbuildcomp2022-7b",
+			"script": "build",
+			"description": "Assembles and tests this project.",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"project": "comp2022-7b",
+			"buildFile": "D:\\COLLEGE\\PROJETOS\\comp2022-7b\\build.gradle",
+			"rootProject": "comp2022-7b",
+			"projectFolder": "d:\\COLLEGE\\PROJETOS\\comp2022-7b",
+			"workspaceFolder": "d:\\COLLEGE\\PROJETOS\\comp2022-7b",
+			"args": "",
+			"javaDebug": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"label": "gradle: build"
+		}
+	]
+}
